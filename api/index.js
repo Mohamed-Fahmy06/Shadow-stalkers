@@ -13,6 +13,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check route
+app.get('/api/ping', (req, res) => {
+    res.json({ status: 'ok', message: 'Server is alive', timestamp: new Date() });
+});
+
 app.use(async (req, res, next) => {
     try {
         await initDb();

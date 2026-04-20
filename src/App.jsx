@@ -6,7 +6,14 @@ const API_URL = '/api';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('booking_token') || '');
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('booking_user')) || null);
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('booking_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [metadata, setMetadata] = useState({ rooms: [], slots: [] });
 
   const login = (userData) => {
@@ -28,7 +35,9 @@ export default function App() {
       axios.get(`${API_URL}/metadata`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setMetadata(res.data))
         .catch(err => {
-          if (err.response && err.response.status === 403) logout();
+          if (err.response && (err.response.status === 403 || err.response.status === 401)) {
+            logout();
+          }
         });
     }
   }, [token]);
@@ -49,16 +58,18 @@ function LoginScreen({ onLogin }) {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const res = await axios.post(`${API_URL}/auth/login`, { employee_id: employeeId, password });
       onLogin(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || 'فشل تسجيل الدخول');
+      const errorData = err.response?.data?.error || err.message || 'فشل تسجيل الدخول';
+      setError(typeof errorData === 'string' ? errorData : JSON.stringify(errorData));
     }
   };
 
   return (
-    <div className="screen active" style={{ display: 'flex' }}>
+    <div className="screen active" style={{ display: 'flex', position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--bg-dark)' }}>
       <div className="login-wrapper">
         <div className="glass-panel login-panel">
           <div className="login-header">
@@ -84,7 +95,7 @@ function LoginScreen({ onLogin }) {
               </div>
             </div>
             <button type="submit" className="btn-primary">تسجيل الدخول</button>
-            {error && <div className="error-text">{error}</div>}
+            {error && <div className="error-text" style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center' }}>{error}</div>}
           </form>
           <div className="login-hints">
             <p>أرقام تجريبية:</p>
@@ -107,10 +118,10 @@ function MainApp({ user, logout, metadata, token }) {
   const isEmployeeOrSec = ['Employee', 'Secretary'].includes(user.role);
   const isAdminOrMngr = ['Admin', 'Branch Manager'].includes(user.role);
   
-  const [activeTab, setActiveTab] = useState(isAdminOrMngr ? 'dashboard' : 'booking');
+  const [activeTab, setActiveTab] = useState(() => isAdminOrMngr ? 'dashboard' : 'booking');
 
   return (
-    <div className="screen active" style={{ display: 'grid' }}>
+    <div id="app-screen" className="active" style={{ display: 'grid' }}>
       <aside className="sidebar glass-panel">
         <div className="sidebar-header">
           <div className="logo-small"><i className="fa-solid fa-building-columns"></i></div>

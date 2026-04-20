@@ -26,31 +26,40 @@ app.use(async (req, res, next) => {
 // 1. Authentication API
 app.post('/api/auth/login', (req, res) => {
     const { employee_id, password } = req.body;
+    if (!employee_id || !password) {
+        return res.status(400).json({ error: 'الرقم الوظيفي وكلمة المرور مطلوبان' });
+    }
+    
     console.log(`Login attempt for ID: ${employee_id}`);
     
     db.get(`SELECT u.*, r.Role_Name FROM Users u JOIN Roles r ON u.Role_ID = r.Role_ID WHERE u.User_ID = ?`, [employee_id], async (err, user) => {
-        if (err) {
-            console.error('DB Login Error:', err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-        if (!user) {
-            console.log(`User not found: ${employee_id}`);
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+        try {
+            if (err) {
+                console.error('DB Login Error:', err);
+                return res.status(500).json({ error: 'خطأ في قاعدة البيانات' });
+            }
+            if (!user) {
+                console.log(`User not found: ${employee_id}`);
+                return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+            }
 
-        const isMatch = await bcrypt.compare(password, user.Password_Hash);
-        if (!isMatch) {
-            console.log(`Password mismatch for ID: ${employee_id}`);
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+            const isMatch = await bcrypt.compare(password, user.Password_Hash);
+            if (!isMatch) {
+                console.log(`Password mismatch for ID: ${employee_id}`);
+                return res.status(401).json({ error: 'بيانات الدخول غير صحيحة' });
+            }
 
-        console.log(`Login successful: ${user.Full_Name} (${user.Role_Name})`);
-        const token = jwt.sign(
-            { userId: user.User_ID, role: user.Role_Name, override: user.View_Available_Override },
-            JWT_SECRET,
-            { expiresIn: '8h' }
-        );
-        res.json({ token, role: user.Role_Name, fullName: user.Full_Name });
+            console.log(`Login successful: ${user.Full_Name} (${user.Role_Name})`);
+            const token = jwt.sign(
+                { userId: user.User_ID, role: user.Role_Name, override: user.View_Available_Override },
+                JWT_SECRET,
+                { expiresIn: '8h' }
+            );
+            res.json({ token, role: user.Role_Name, fullName: user.Full_Name });
+        } catch (callbackErr) {
+            console.error('Login Callback Error:', callbackErr);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
     });
 });
 
@@ -145,7 +154,7 @@ app.patch('/api/bookings/:id/respond', authenticate, authorize(['Admin', 'Branch
 });
 
 // 3. Admin Dashboard API
-app.get('/api/admin/calendar-view', authenticate, authorize(['Admin']), (req, res) => {
+app.get('/api/admin/calendar-view', authenticate, authorize(['Admin', 'Branch Manager']), (req, res) => {
     db.all(`SELECT b.*, r.Room_Name, r.Room_Type, t.Start_Time, t.End_Time, u.Full_Name
             FROM Bookings b
             JOIN Rooms r ON b.Room_ID = r.Room_ID
@@ -156,7 +165,7 @@ app.get('/api/admin/calendar-view', authenticate, authorize(['Admin']), (req, re
     });
 });
 
-app.get('/api/admin/search-available', authenticate, authorize(['Admin']), (req, res) => {
+app.get('/api/admin/search-available', authenticate, authorize(['Admin', 'Branch Manager']), (req, res) => {
     const { date, slot_id, room_type } = req.query;
     db.all(`SELECT * FROM Rooms r WHERE Room_Type = ? AND Room_ID NOT IN (
                 SELECT Room_ID FROM Bookings WHERE Booking_Date = ? AND Slot_ID = ? AND Status IN ('Pending', 'Approved')
@@ -177,7 +186,7 @@ app.post('/api/admin/delegate', authenticate, authorize(['Admin']), (req, res) =
 });
 
 // 5. Morning Report
-app.get('/api/reports/morning-summary', authenticate, authorize(['Admin']), (req, res) => {
+app.get('/api/reports/morning-summary', authenticate, authorize(['Admin', 'Branch Manager']), (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     db.all(`SELECT b.*, r.Room_Name, t.Start_Time, t.End_Time 
             FROM Bookings b

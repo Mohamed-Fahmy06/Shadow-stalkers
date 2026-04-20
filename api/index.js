@@ -18,9 +18,16 @@ app.use(async (req, res, next) => {
         await initDb();
         next();
     } catch (err) {
-        console.error('Failed to initialize database:', err);
-        res.status(500).json({ error: 'Database initialization failed' });
+        console.error('Database Init Error:', err);
+        // Ensure we send a string, not the error object itself
+        res.status(500).json({ error: String(err.message || 'Database initialization failed') });
     }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled Error:', err);
+    res.status(500).json({ error: String(err.message || 'Internal Server Error') });
 });
 
 // 1. Authentication API

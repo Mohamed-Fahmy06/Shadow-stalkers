@@ -17,17 +17,25 @@ export default function App() {
   const [metadata, setMetadata] = useState({ rooms: [], slots: [] });
 
   const login = (userData) => {
-    setToken(userData.token);
-    setUser({ role: userData.role, name: userData.fullName });
-    localStorage.setItem('booking_token', userData.token);
-    localStorage.setItem('booking_user', JSON.stringify({ role: userData.role, name: userData.fullName }));
+    try {
+      setToken(userData.token);
+      setUser({ role: userData.role, name: userData.fullName });
+      localStorage.setItem('booking_token', userData.token);
+      localStorage.setItem('booking_user', JSON.stringify({ role: userData.role, name: userData.fullName }));
+    } catch (e) {
+      console.error('Storage error:', e);
+    }
   };
 
   const logout = () => {
-    setToken('');
-    setUser(null);
-    localStorage.removeItem('booking_token');
-    localStorage.removeItem('booking_user');
+    try {
+      setToken('');
+      setUser(null);
+      localStorage.removeItem('booking_token');
+      localStorage.removeItem('booking_user');
+    } catch (e) {
+      console.error('Storage error:', e);
+    }
   };
 
   useEffect(() => {
@@ -35,6 +43,7 @@ export default function App() {
       axios.get(`${API_URL}/metadata`, { headers: { Authorization: `Bearer ${token}` } })
         .then(res => setMetadata(res.data))
         .catch(err => {
+          console.error('Metadata fetch error:', err);
           if (err.response && (err.response.status === 403 || err.response.status === 401)) {
             logout();
           }
@@ -63,8 +72,19 @@ function LoginScreen({ onLogin }) {
       const res = await axios.post(`${API_URL}/auth/login`, { employee_id: employeeId, password });
       onLogin(res.data);
     } catch (err) {
-      const errorData = err.response?.data?.error || err.message || 'فشل تسجيل الدخول';
-      setError(typeof errorData === 'string' ? errorData : JSON.stringify(errorData));
+      console.error('Detailed Login Error:', err);
+      let errorMsg = 'فشل تسجيل الدخول';
+      
+      if (err.response?.data?.error) {
+        // If the server sends an object for 'error', String() it
+        errorMsg = typeof err.response.data.error === 'string' 
+          ? err.response.data.error 
+          : JSON.stringify(err.response.data.error);
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      
+      setError(String(errorMsg));
     }
   };
 
@@ -95,7 +115,11 @@ function LoginScreen({ onLogin }) {
               </div>
             </div>
             <button type="submit" className="btn-primary">تسجيل الدخول</button>
-            {error && <div className="error-text" style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center' }}>{error}</div>}
+            {error && (
+              <div className="error-text" style={{ color: 'var(--danger)', marginTop: '1rem', textAlign: 'center' }}>
+                {typeof error === 'string' ? error : 'حدث خطأ غير متوقع'}
+              </div>
+            )}
           </form>
           <div className="login-hints">
             <p>أرقام تجريبية:</p>

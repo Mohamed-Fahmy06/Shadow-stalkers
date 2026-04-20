@@ -1,9 +1,7 @@
-import sqlite3 from 'sqlite3';
-const sqlite3Verbose = sqlite3.verbose();
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import { fileURLToPath } from 'url';
-import process from 'process'; // Explicit import to fix 'process is not defined'
+import process from 'process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,19 +9,25 @@ const __dirname = path.dirname(__filename);
 const env = process.env || {};
 const dbPath = env.VERCEL ? '/tmp/booking_system.db' : path.resolve(__dirname, 'booking_system.db');
 
+let sqlite3Verbose = null;
 let db = null;
 let initialized = false;
 let initPromise = null;
 
 const runObj = (sql, params = []) => new Promise((resolve, reject) => {
-    if (!db) return reject(new Error('Database not initialized'));
+    if (!db) return reject(new Error('Database not initialized - check server logs'));
     db.run(sql, params, function(err) { 
         if(err) reject(err); else resolve(this); 
     });
 });
 
 const doInit = async () => {
-    console.log('Initializing Database at:', dbPath);
+    console.log('Starting Lazy Init at:', dbPath);
+    
+    // Dynamic import to catch native binary failures
+    const sqlite3Module = await import('sqlite3');
+    sqlite3Verbose = sqlite3Module.default.verbose();
+    
     db = new sqlite3Verbose.Database(dbPath);
     
     await runObj(`CREATE TABLE IF NOT EXISTS Roles (Role_ID INTEGER PRIMARY KEY AUTOINCREMENT, Role_Name TEXT UNIQUE NOT NULL)`);

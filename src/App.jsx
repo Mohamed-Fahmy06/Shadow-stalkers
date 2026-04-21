@@ -122,10 +122,12 @@ function LoginScreen({ onLogin }) {
             )}
           </form>
           <div className="login-hints">
-            <p>أرقام تجريبية:</p>
+            <p>بيانات تجريبية:</p>
             <small>مسئول: 100، مدير فرع: 200، موظف: 300، سكرتير: 400</small>
             <br />
             <small style={{ color: 'var(--warning)' }}>كلمات المرور: admin123, mngr, emp, sec</small>
+            <br />
+            <small>(قاعة متعددة الأغراض: Room 001, Room 401)</small>
           </div>
         </div>
         <div className="background-decorations">
@@ -256,6 +258,16 @@ function BlindBookingForm({ metadata, token, role }) {
             <option value="Lecture Hall">قاعة محاضرات</option>
             <option value="Multi-purpose">قاعة متعددة الأغراض</option>
           </select>
+          {form.room_type === 'Multi-purpose' && (
+            <small style={{ color: 'var(--primary)', marginTop: '0.5rem', display: 'block' }}>
+              (قاعة متعددة الأغراض: Room 001, Room 401)
+            </small>
+          )}
+          {form.room_type === 'Lecture Hall' && (
+            <small style={{ color: 'var(--primary)', marginTop: '0.5rem', display: 'block' }}>
+              (قاعة محاضرات: Room 101, Room 102)
+            </small>
+          )}
         </div>
         <div className="input-group">
           <label>القاعة المحددة</label>

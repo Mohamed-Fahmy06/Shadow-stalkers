@@ -168,10 +168,10 @@ export const initDb = async () => {
     ];
 
     data.Rooms = [
-        { Room_ID: 1, Room_Name: 'Hall A', Room_Type: 'Lecture Hall', Capacity: 150 },
-        { Room_ID: 2, Room_Name: 'Hall B', Room_Type: 'Lecture Hall', Capacity: 100 },
-        { Room_ID: 3, Room_Name: 'Meeting Room 1', Room_Type: 'Multi-purpose', Capacity: 30 },
-        { Room_ID: 4, Room_Name: 'Conference Center', Room_Type: 'Multi-purpose', Capacity: 500 }
+        { Room_ID: 1, Room_Name: 'Room 101', Room_Type: 'Lecture Hall', Capacity: 150 },
+        { Room_ID: 2, Room_Name: 'Room 102', Room_Type: 'Lecture Hall', Capacity: 100 },
+        { Room_ID: 3, Room_Name: 'Room 001', Room_Type: 'Multi-purpose', Capacity: 30 },
+        { Room_ID: 4, Room_Name: 'Room 401', Room_Type: 'Multi-purpose', Capacity: 500 }
     ];
 
     data.Time_Slots = [
